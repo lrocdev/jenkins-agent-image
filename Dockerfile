@@ -4,6 +4,7 @@
 # to install packages and run scripts.
 
 FROM ubuntu:18.04
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 ARG user=jenkins
 ARG group=jenkins
@@ -24,6 +25,7 @@ RUN mkdir -p "${JENKINS_AGENT_HOME}/.ssh/" \
 RUN apt-get update && \
     apt-get -qy full-upgrade && \
     apt-get install -qy git && \
+    apt-get install -qy curl && \
 # Install a basic SSH server
     apt-get install -qy openssh-server && \
 # Java installation open jdk 11
@@ -58,20 +60,29 @@ RUN chown -R jenkins:jenkins ${JENKINS_AGENT_HOME} && \
 
 USER jenkins
 # Install miniconda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-    sudo /bin/bash ~/miniconda.sh -b -p /opt/conda && \
-    rm ~/miniconda.sh && \
-    sudo ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-    touch .bashrc && \
-    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate base" >> ~/.bashrc
+# RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+#     sudo /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+#     rm ~/miniconda.sh && \
+#     sudo ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+#     touch .bashrc && \
+#     echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+#     echo "conda activate base" >> ~/.bashrc
+RUN curl -s -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh" && \
+    sh Mambaforge-Linux-x86_64.sh -b
 
 USER root
 
-ENV PATH=/opt/conda/bin:$PATH
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+
+ENV PATH="${PATH}:/home/jenkins/mambaforge/bin:/home/jenkins/mambaforge/condabin"
 
 EXPOSE 22
 
-ENTRYPOINT ["setup-sshd"]
+# ENTRYPOINT ["/usr/bin/tini", "--", "setup-sshd"]
+COPY entrypoint.sh /scripts/commands.sh
+RUN ["chmod", "+x", "/scripts/commands.sh"]
+ENTRYPOINT ["/scripts/commands.sh"]
 
 
