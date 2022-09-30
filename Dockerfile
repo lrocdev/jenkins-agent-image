@@ -59,14 +59,7 @@ RUN chown -R jenkins:jenkins ${JENKINS_AGENT_HOME} && \
     chown -R jenkins:jenkins ${JENKINS_AGENT_HOME}/.ssh
 
 USER jenkins
-# Install miniconda
-# RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
-#     sudo /bin/bash ~/miniconda.sh -b -p /opt/conda && \
-#     rm ~/miniconda.sh && \
-#     sudo ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
-#     touch .bashrc && \
-#     echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-#     echo "conda activate base" >> ~/.bashrc
+
 RUN curl -s -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh" && \
     sh Mambaforge-Linux-x86_64.sh -b
 
@@ -84,5 +77,3 @@ EXPOSE 22
 COPY entrypoint.sh /scripts/commands.sh
 RUN ["chmod", "+x", "/scripts/commands.sh"]
 ENTRYPOINT ["/scripts/commands.sh"]
-
-
